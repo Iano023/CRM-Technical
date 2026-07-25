@@ -8,6 +8,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-customer-form',
@@ -23,6 +24,7 @@ export class CustomerFormComponent implements OnInit {
   loading: boolean = false;
   submitting: boolean = false;
   errorMessage: string = '';
+  apiErrors: { [key: string]: string[] } = {};
 
   constructor(
     private fb: FormBuilder,
@@ -34,10 +36,10 @@ export class CustomerFormComponent implements OnInit {
   ngOnInit(): void {
     // Initialize Reactive Form with validation rules
     this.customerForm = this.fb.group({
-      first_name: ['', [Validators.required, Validators.minLength(2)]],
-      last_name: ['', [Validators.required, Validators.minLength(2)]],
+      first_name: ['', [Validators.required]],
+      last_name: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      contact_number: ['', [Validators.required, Validators.pattern(/^[0-9+--\s()]{7,15}$/)]],
+      contact_number: [''],
     });
 
     // Determine if we are in Create mode or Edit mode based on URL parameter
@@ -49,9 +51,6 @@ export class CustomerFormComponent implements OnInit {
     }
   }
 
-  /**
-   * Helper getter to access form controls easily in template
-   */
   get f() {
     return this.customerForm.controls;
   }
@@ -65,23 +64,42 @@ export class CustomerFormComponent implements OnInit {
             first_name: customer.first_name,
             last_name: customer.last_name,
             email: customer.email,
-            contact_number: customer.contact_number,
+            contact_number: customer.contact_number || '',
           });
-        } else {
-          this.errorMessage = `Customer #${id} not found.`;
         }
         this.loading = false;
       },
-      error: () => {
-        this.errorMessage = 'Failed to load customer data.';
+      error: (err) => {
+        console.error('Error loading customer:', err);
+        this.errorMessage = 'Failed to load customer record from server.';
         this.loading = false;
       },
     });
   }
 
+  private handleApiError(err: HttpErrorResponse): void {
+    this.submitting = false;
+    if (err.status === 422 && err.error?.errors) {
+      this.apiErrors = err.error.errors;
+      this.errorMessage = err.error.message || 'Validation error occurred. Please check the fields below.';
+
+      // Apply field-specific errors to form controls
+      Object.keys(err.error.errors).forEach((field) => {
+        const control = this.customerForm.get(field);
+        if (control) {
+          control.setErrors({ serverError: err.error.errors[field].join(' ') });
+        }
+      });
+    } else {
+      this.errorMessage = err.error?.message || 'An unexpected error occurred while communicating with the server.';
+    }
+  }
+
   onSubmit(): void {
+    this.errorMessage = '';
+    this.apiErrors = {};
+
     if (this.customerForm.invalid) {
-      // Mark all fields as touched to trigger Bootstrap validation styling
       this.customerForm.markAllAsTouched();
       return;
     }
@@ -90,28 +108,20 @@ export class CustomerFormComponent implements OnInit {
     const formData = this.customerForm.value;
 
     if (this.isEditMode && this.customerId) {
-      // Edit Customer logic
       this.customerService.updateCustomer(this.customerId, formData).subscribe({
         next: () => {
           this.submitting = false;
           this.router.navigate(['/customers']);
         },
-        error: (err) => {
-          this.errorMessage = err.message || 'Failed to update customer.';
-          this.submitting = false;
-        },
+        error: (err: HttpErrorResponse) => this.handleApiError(err),
       });
     } else {
-      // Create Customer logic
       this.customerService.addCustomer(formData).subscribe({
         next: () => {
           this.submitting = false;
           this.router.navigate(['/customers']);
         },
-        error: (err) => {
-          this.errorMessage = err.message || 'Failed to create customer.';
-          this.submitting = false;
-        },
+        error: (err: HttpErrorResponse) => this.handleApiError(err),
       });
     }
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -15,54 +15,67 @@ import { CustomerService } from '../../services/customer.service';
 export class CustomerListComponent implements OnInit {
   customers: Customer[] = [];
   searchTerm: string = '';
+  loading: boolean = false;
   deleteSuccessMessage: string = '';
+  errorMessage: string = '';
 
   constructor(
     private customerService: CustomerService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadCustomers();
   }
 
-  loadCustomers(): void {
-    this.customerService.getCustomers().subscribe((data) => {
-      this.customers = data;
+  /**
+   * Fetch customers list from backend REST API
+   */
+  loadCustomers(search?: string): void {
+    this.loading = true;
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+
+    this.customerService.getCustomers(search).subscribe({
+      next: (data) => {
+        this.customers = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load customers from API', err);
+        this.errorMessage = 'Unable to connect to backend API. Please make sure Laravel is running.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   /**
-   * Computed getter that filters customer list based on search term
+   * Trigger search query against backend API
+   */
+  onSearchChange(): void {
+    this.loadCustomers(this.searchTerm);
+  }
+
+  /**
+   * Clear search filter
+   */
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.loadCustomers();
+  }
+
+  /**
+   * Getter for displaying customers
    */
   get filteredCustomers(): Customer[] {
-    const rawTerm = this.searchTerm.trim().toLowerCase();
-    if (!rawTerm) {
-      return this.customers;
-    }
-
-    // Split search into keywords so queries like "Albert Abarquez" or "Abarquez Albert" match
-    const keywords = rawTerm.split(/\s+/);
-
-    return this.customers.filter((c) => {
-      const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
-      const reverseFullName = `${c.last_name} ${c.first_name}`.toLowerCase();
-      const email = c.email.toLowerCase();
-      const contact = c.contact_number.toLowerCase();
-
-      // Check if all search keywords match somewhere in full name, email, or contact number
-      return keywords.every(
-        (kw) =>
-          fullName.includes(kw) ||
-          reverseFullName.includes(kw) ||
-          email.includes(kw) ||
-          contact.includes(kw)
-      );
-    });
+    return this.customers;
   }
 
   /**
-   * Delete customer with confirmation modal/dialog
+   * Delete customer with confirmation dialog
    */
   onDelete(customer: Customer): void {
     const confirmed = confirm(
@@ -70,12 +83,18 @@ export class CustomerListComponent implements OnInit {
     );
 
     if (confirmed) {
-      this.customerService.deleteCustomer(customer.id).subscribe((success) => {
-        if (success) {
+      this.customerService.deleteCustomer(customer.id).subscribe({
+        next: () => {
           this.deleteSuccessMessage = `Customer ${customer.first_name} ${customer.last_name} deleted successfully!`;
+          this.loadCustomers(this.searchTerm);
           setTimeout(() => {
             this.deleteSuccessMessage = '';
+            this.cdr.detectChanges();
           }, 3000);
+        },
+        error: (err) => {
+          console.error('Failed to delete customer', err);
+          alert('Failed to delete customer. Please try again.');
         }
       });
     }

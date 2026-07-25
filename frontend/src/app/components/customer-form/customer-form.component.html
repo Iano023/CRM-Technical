@@ -42,13 +42,13 @@
                 type="text"
                 id="first_name"
                 class="form-control"
-                [ngClass]="{ 'is-invalid': f['first_name'].touched && f['first_name'].errors }"
+                [ngClass]="{ 'is-invalid': (f['first_name'].touched || submitting) && f['first_name'].errors }"
                 formControlName="first_name"
                 placeholder="e.g. Albert"
               />
-              <div *ngIf="f['first_name'].touched && f['first_name'].errors" class="invalid-feedback">
+              <div *ngIf="(f['first_name'].touched || submitting) && f['first_name'].errors" class="invalid-feedback">
                 <span *ngIf="f['first_name'].errors['required']">First Name is required.</span>
-                <span *ngIf="f['first_name'].errors['minlength']">First Name must be at least 2 characters.</span>
+                <span *ngIf="f['first_name'].errors['serverError']">{{ f['first_name'].errors['serverError'] }}</span>
               </div>
             </div>
 
@@ -59,13 +59,13 @@
                 type="text"
                 id="last_name"
                 class="form-control"
-                [ngClass]="{ 'is-invalid': f['last_name'].touched && f['last_name'].errors }"
+                [ngClass]="{ 'is-invalid': (f['last_name'].touched || submitting) && f['last_name'].errors }"
                 formControlName="last_name"
                 placeholder="e.g. Abarquez"
               />
-              <div *ngIf="f['last_name'].touched && f['last_name'].errors" class="invalid-feedback">
+              <div *ngIf="(f['last_name'].touched || submitting) && f['last_name'].errors" class="invalid-feedback">
                 <span *ngIf="f['last_name'].errors['required']">Last Name is required.</span>
-                <span *ngIf="f['last_name'].errors['minlength']">Last Name must be at least 2 characters.</span>
+                <span *ngIf="f['last_name'].errors['serverError']">{{ f['last_name'].errors['serverError'] }}</span>
               </div>
             </div>
 
@@ -78,34 +78,34 @@
                   type="email"
                   id="email"
                   class="form-control"
-                  [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].errors }"
+                  [ngClass]="{ 'is-invalid': (f['email'].touched || submitting || f['email'].errors?.['serverError']) && f['email'].errors }"
                   formControlName="email"
                   placeholder="e.g. albert@email.com"
                 />
               </div>
-              <div *ngIf="f['email'].touched && f['email'].errors" class="d-block invalid-feedback">
+              <div *ngIf="(f['email'].touched || submitting || f['email'].errors?.['serverError']) && f['email'].errors" class="d-block invalid-feedback">
                 <span *ngIf="f['email'].errors['required']">Email Address is required.</span>
                 <span *ngIf="f['email'].errors['email']">Please enter a valid email address.</span>
+                <span *ngIf="f['email'].errors['serverError']">{{ f['email'].errors['serverError'] }}</span>
               </div>
             </div>
 
             <!-- Contact Number -->
             <div class="col-md-6">
-              <label for="contact_number" class="form-label fw-bold">Contact Number <span class="text-danger">*</span></label>
+              <label for="contact_number" class="form-label fw-bold">Contact Number</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-telephone"></i></span>
                 <input
                   type="text"
                   id="contact_number"
                   class="form-control"
-                  [ngClass]="{ 'is-invalid': f['contact_number'].touched && f['contact_number'].errors }"
+                  [ngClass]="{ 'is-invalid': (f['contact_number'].touched || submitting) && f['contact_number'].errors }"
                   formControlName="contact_number"
                   placeholder="e.g. 09123456789"
                 />
               </div>
-              <div *ngIf="f['contact_number'].touched && f['contact_number'].errors" class="d-block invalid-feedback">
-                <span *ngIf="f['contact_number'].errors['required']">Contact Number is required.</span>
-                <span *ngIf="f['contact_number'].errors['pattern']">Please enter a valid contact number (7-15 digits).</span>
+              <div *ngIf="(f['contact_number'].touched || submitting) && f['contact_number'].errors" class="d-block invalid-feedback">
+                <span *ngIf="f['contact_number'].errors['serverError']">{{ f['contact_number'].errors['serverError'] }}</span>
               </div>
             </div>
           </div>

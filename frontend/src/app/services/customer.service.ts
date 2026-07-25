@@ -1,99 +1,67 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 import { Customer } from '../models/customer.model';
+import { environment } from '../../environments/environment';
+
+export interface ApiResponse<T> {
+  message?: string;
+  data: T;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class CustomerService {
-  // Initial mock customer dataset as required by specifications
-  private mockCustomers: Customer[] = [
-    {
-      id: 1,
-      first_name: 'Albert',
-      last_name: 'Abarquez',
-      email: 'albert@email.com',
-      contact_number: '09123456789',
-    },
-    {
-      id: 2,
-      first_name: 'Maria',
-      last_name: 'Santos',
-      email: 'maria.santos@email.com',
-      contact_number: '09987654321',
-    },
-    {
-      id: 3,
-      first_name: 'Juan',
-      last_name: 'Dela Cruz',
-      email: 'juan.delacruz@email.com',
-      contact_number: '09171234567',
-    },
-  ];
+  // Base URL sourced from environment config (src/environments/environment.ts)
+  private apiUrl = environment.apiUrl;
 
-  private customers$ = new BehaviorSubject<Customer[]>(this.mockCustomers);
+  constructor(private http: HttpClient) {}
 
   /**
-   * Get all customers as an Observable stream
+   * Get all customers from Laravel API, supporting real-time search queries
    */
-  getCustomers(): Observable<Customer[]> {
-    return this.customers$.asObservable();
+  getCustomers(search?: string): Observable<Customer[]> {
+    let params = new HttpParams();
+    if (search && search.trim()) {
+      params = params.set('search', search.trim());
+    }
+    return this.http.get<Customer[]>(this.apiUrl, { params });
   }
 
   /**
    * Get a single customer by ID
    */
-  getCustomerById(id: number): Observable<Customer | undefined> {
-    const customer = this.mockCustomers.find((c) => c.id === id);
-    return of(customer);
+  getCustomerById(id: number): Observable<Customer> {
+    return this.http.get<ApiResponse<Customer>>(`${this.apiUrl}/${id}`).pipe(
+      map((response) => response.data)
+    );
   }
 
   /**
-   * Add a new customer
+   * Add a new customer record via POST
    */
   addCustomer(customerData: Omit<Customer, 'id'>): Observable<Customer> {
-    const nextId = this.mockCustomers.length > 0 
-      ? Math.max(...this.mockCustomers.map((c) => c.id)) + 1 
-      : 1;
-
-    const newCustomer: Customer = {
-      id: nextId,
-      ...customerData,
-    };
-
-    this.mockCustomers = [...this.mockCustomers, newCustomer];
-    this.customers$.next(this.mockCustomers);
-    return of(newCustomer);
+    return this.http.post<ApiResponse<Customer>>(this.apiUrl, customerData).pipe(
+      map((response) => response.data)
+    );
   }
 
   /**
-   * Update an existing customer
+   * Update an existing customer via PUT
    */
   updateCustomer(id: number, updatedData: Partial<Customer>): Observable<Customer> {
-    const index = this.mockCustomers.findIndex((c) => c.id === id);
-    if (index === -1) {
-      return throwError(() => new Error(`Customer with ID ${id} not found.`));
-    }
-
-    const updatedCustomer: Customer = {
-      ...this.mockCustomers[index],
-      ...updatedData,
-      id, // Preserve ID
-    };
-
-    this.mockCustomers[index] = updatedCustomer;
-    this.mockCustomers = [...this.mockCustomers];
-    this.customers$.next(this.mockCustomers);
-    return of(updatedCustomer);
+    return this.http.put<ApiResponse<Customer>>(`${this.apiUrl}/${id}`, updatedData).pipe(
+      map((response) => response.data)
+    );
   }
 
   /**
-   * Delete a customer by ID
+   * Delete a customer by ID via DELETE
    */
   deleteCustomer(id: number): Observable<boolean> {
-    const initialLength = this.mockCustomers.length;
-    this.mockCustomers = this.mockCustomers.filter((c) => c.id !== id);
-    this.customers$.next(this.mockCustomers);
-    return of(this.mockCustomers.length < initialLength);
+    return this.http.delete<ApiResponse<null>>(`${this.apiUrl}/${id}`).pipe(
+      map(() => true)
+    );
   }
 }

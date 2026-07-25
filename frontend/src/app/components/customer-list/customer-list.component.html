@@ -20,6 +20,11 @@
       <i class="bi bi-check-circle-fill me-2"></i>{{ deleteSuccessMessage }}
     </div>
 
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errorMessage }}
+    </div>
+
     <!-- Search Bar -->
     <div class="row mb-4">
       <div class="col-md-6 col-lg-5">
@@ -32,12 +37,13 @@
             class="form-control bg-light border-start-0 ps-0"
             placeholder="Search by name, email, or contact..."
             [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
           />
           <button
             *ngIf="searchTerm"
             class="btn btn-outline-secondary"
             type="button"
-            (click)="searchTerm = ''"
+            (click)="clearSearch()"
           >
             <i class="bi bi-x"></i>
           </button>
@@ -45,8 +51,16 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-muted mb-0">Fetching customers from backend...</p>
+    </div>
+
     <!-- Customer Table -->
-    <div class="table-responsive">
+    <div *ngIf="!loading" class="table-responsive">
       <table class="table table-hover align-middle border">
         <thead class="table-light">
           <tr>
