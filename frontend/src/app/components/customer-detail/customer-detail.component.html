@@ -1,0 +1,101 @@
+<!-- Loading State -->
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <p class="mt-2 text-muted">Loading customer details...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="!loading && error" class="card shadow-sm border-0">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-exclamation-triangle text-warning fs-1 d-block mb-3"></i>
+    <h4 class="text-dark fw-bold">{{ error }}</h4>
+    <p class="text-muted">The requested customer record does not exist or was removed.</p>
+    <a routerLink="/customers" class="btn btn-primary mt-2">
+      <i class="bi bi-arrow-left me-1"></i>Back to Customer Directory
+    </a>
+  </div>
+</div>
+
+<!-- Customer Profile Details -->
+<div *ngIf="!loading && customer" class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mb-3">
+      <a routerLink="/customers" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left me-1"></i>Back to Customer List
+      </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <!-- Card Header -->
+      <div class="card-header bg-primary text-white p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold fs-3" style="width: 60px; height: 60px;">
+            {{ customer.first_name[0] }}{{ customer.last_name[0] }}
+          </div>
+          <div>
+            <h3 class="mb-0 fw-bold">{{ customer.first_name }} {{ customer.last_name }}</h3>
+            <span class="badge bg-light text-primary mt-1">Customer ID: #{{ customer.id }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card-body p-4">
+        <h5 class="text-secondary fw-bold mb-3 border-bottom pb-2">
+          <i class="bi bi-person-lines-fill me-2"></i>Contact Information
+        </h5>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="p-3 bg-light rounded">
+              <small class="text-muted d-block text-uppercase fw-bold">First Name</small>
+              <span class="fs-5 text-dark fw-semibold">{{ customer.first_name }}</span>
+            </div>
+          </div>
+
+          <div class="col-sm-6">
+            <div class="p-3 bg-light rounded">
+              <small class="text-muted d-block text-uppercase fw-bold">Last Name</small>
+              <span class="fs-5 text-dark fw-semibold">{{ customer.last_name }}</span>
+            </div>
+          </div>
+
+          <div class="col-sm-6">
+            <div class="p-3 bg-light rounded">
+              <small class="text-muted d-block text-uppercase fw-bold">Email Address</small>
+              <a [href]="'mailto:' + customer.email" class="fs-5 text-decoration-none fw-semibold">
+                <i class="bi bi-envelope me-1"></i>{{ customer.email }}
+              </a>
+            </div>
+          </div>
+
+          <div class="col-sm-6">
+            <div class="p-3 bg-light rounded">
+              <small class="text-muted d-block text-uppercase fw-bold">Contact Number</small>
+              <span class="fs-5 text-dark fw-semibold">
+                <i class="bi bi-telephone me-1 text-muted"></i>{{ customer.contact_number }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Footer Actions -->
+      <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center">
+        <a routerLink="/customers" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+        <div class="d-flex gap-2">
+          <a [routerLink]="['/customers', customer.id, 'edit']" class="btn btn-primary">
+            <i class="bi bi-pencil-fill me-1"></i>Edit Customer
+          </a>
+          <a [routerLink]="['/customers', customer.id, 'delete']" class="btn btn-outline-danger">
+            <i class="bi bi-trash-fill me-1"></i>Delete
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

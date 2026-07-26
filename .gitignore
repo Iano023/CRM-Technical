@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+backend/vendor/
+frontend/node_modules/
+
+# Environment
+.env
+backend/.env
+frontend/.env
+*.env
+
+# Build outputs
+frontend/dist/
+frontend/.angular/
+
+# IDE / System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+backend/database/database.sqlite
+
+# Exam / Prompt Documentation (Temporary ignore)
+AGENTS.md
+AI_Agent_Instructions_CRM.md
+CRM_Technical_Exam_Plan_Updated.md
+Technical_Exam_Proposal_CRM.md
+

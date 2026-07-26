@@ -1,0 +1,128 @@
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="mb-3">
+      <a routerLink="/customers" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left me-1"></i>Back to Customer Directory
+      </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <!-- Card Header -->
+      <div class="card-header bg-white py-3">
+        <h4 class="mb-0 fw-bold text-dark">
+          <i class="bi" [ngClass]="isEditMode ? 'bi-pencil-square text-primary' : 'bi-person-plus-fill text-success'"></i>
+          {{ isEditMode ? 'Edit Customer #' + customerId : 'Create New Customer' }}
+        </h4>
+        <small class="text-muted">
+          {{ isEditMode ? 'Update customer details below.' : 'Fill in the information to add a new customer record.' }}
+        </small>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="card-body text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading customer record...</p>
+      </div>
+
+      <!-- Form Body -->
+      <div *ngIf="!loading" class="card-body p-4">
+        <!-- Error Alert -->
+        <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errorMessage }}
+        </div>
+
+        <form [formGroup]="customerForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="row g-3">
+            <!-- First Name -->
+            <div class="col-md-6">
+              <label for="first_name" class="form-label fw-bold">First Name <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="first_name"
+                class="form-control"
+                [ngClass]="{ 'is-invalid': f['first_name'].touched && f['first_name'].errors }"
+                formControlName="first_name"
+                placeholder="e.g. Albert"
+              />
+              <div *ngIf="f['first_name'].touched && f['first_name'].errors" class="invalid-feedback">
+                <span *ngIf="f['first_name'].errors['required']">First Name is required.</span>
+                <span *ngIf="f['first_name'].errors['minlength']">First Name must be at least 2 characters.</span>
+              </div>
+            </div>
+
+            <!-- Last Name -->
+            <div class="col-md-6">
+              <label for="last_name" class="form-label fw-bold">Last Name <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="last_name"
+                class="form-control"
+                [ngClass]="{ 'is-invalid': f['last_name'].touched && f['last_name'].errors }"
+                formControlName="last_name"
+                placeholder="e.g. Abarquez"
+              />
+              <div *ngIf="f['last_name'].touched && f['last_name'].errors" class="invalid-feedback">
+                <span *ngIf="f['last_name'].errors['required']">Last Name is required.</span>
+                <span *ngIf="f['last_name'].errors['minlength']">Last Name must be at least 2 characters.</span>
+              </div>
+            </div>
+
+            <!-- Email Address -->
+            <div class="col-md-6">
+              <label for="email" class="form-label fw-bold">Email Address <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input
+                  type="email"
+                  id="email"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].errors }"
+                  formControlName="email"
+                  placeholder="e.g. albert@email.com"
+                />
+              </div>
+              <div *ngIf="f['email'].touched && f['email'].errors" class="d-block invalid-feedback">
+                <span *ngIf="f['email'].errors['required']">Email Address is required.</span>
+                <span *ngIf="f['email'].errors['email']">Please enter a valid email address.</span>
+              </div>
+            </div>
+
+            <!-- Contact Number -->
+            <div class="col-md-6">
+              <label for="contact_number" class="form-label fw-bold">Contact Number <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                <input
+                  type="text"
+                  id="contact_number"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': f['contact_number'].touched && f['contact_number'].errors }"
+                  formControlName="contact_number"
+                  placeholder="e.g. 09123456789"
+                />
+              </div>
+              <div *ngIf="f['contact_number'].touched && f['contact_number'].errors" class="d-block invalid-feedback">
+                <span *ngIf="f['contact_number'].errors['required']">Contact Number is required.</span>
+                <span *ngIf="f['contact_number'].errors['pattern']">Please enter a valid contact number (7-15 digits).</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <a routerLink="/customers" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+            <button type="submit" class="btn btn-primary shadow-sm" [disabled]="submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              <i *ngIf="!submitting" class="bi me-1" [ngClass]="isEditMode ? 'bi-check-circle-fill' : 'bi-person-plus-fill'"></i>
+              {{ isEditMode ? 'Save Changes' : 'Create Customer' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
