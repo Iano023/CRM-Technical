@@ -6,53 +6,74 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
+use App\Services\ElasticsearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
+    protected ElasticsearchService $elasticsearchService;
+
+    public function __construct(ElasticsearchService $elasticsearchService)
+    {
+        $this->elasticsearchService = $elasticsearchService;
+    }
+
     /**
      * Display a listing of all customers.
-     * Supports filtering by name (first_name, last_name, full name) and email address.
+     * Searches Elasticsearch when search query is provided, with graceful fallback to MySQL.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Customer::query();
-
-        // Support 'search' or 'query' query parameters
         $searchTerm = $request->query('search') ?? $request->query('query');
 
         if (!empty($searchTerm)) {
             $searchTerm = trim($searchTerm);
 
+            // Attempt to search via Elasticsearch first
+            $esResults = $this->elasticsearchService->searchCustomers($searchTerm);
+            if ($esResults !== null) {
+                return response()->json($esResults, 200);
+            }
+
+            // Fallback to MySQL query if Elasticsearch is unavailable
+            $query = Customer::query();
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('first_name', 'LIKE', "%{$searchTerm}%")
                   ->orWhere('last_name', 'LIKE', "%{$searchTerm}%")
                   ->orWhere('email', 'LIKE', "%{$searchTerm}%")
                   ->orWhere('contact_number', 'LIKE', "%{$searchTerm}%");
 
-                // Handle full name search like "Albert Abarquez"
                 $keywords = preg_split('/\s+/', $searchTerm);
                 if (count($keywords) > 1) {
                     $q->orWhere(function ($nameQuery) use ($keywords) {
-                        $nameQuery->where('first_name', 'LIKE', "%{$keywords[0]}%")
-                                  ->where('last_name', 'LIKE', "%{$keywords[1]}%");
+                        foreach ($keywords as $kw) {
+                            $nameQuery->where(function ($sub) use ($kw) {
+                                $sub->where('first_name', 'LIKE', "%{$kw}%")
+                                   ->orWhere('last_name', 'LIKE', "%{$kw}%");
+                            });
+                        }
                     });
                 }
             });
+
+            $customers = $query->orderBy('id', 'desc')->get();
+            return response()->json($customers, 200);
         }
 
-        $customers = $query->orderBy('id', 'desc')->get();
-
+        $customers = Customer::orderBy('id', 'desc')->get();
         return response()->json($customers, 200);
     }
 
     /**
-     * Store a newly created customer in storage.
+     * Store a newly created customer in MySQL and sync to Elasticsearch.
      */
     public function store(StoreCustomerRequest $request): JsonResponse
     {
         $customer = Customer::create($request->validated());
+
+        // Sync to Elasticsearch
+        $this->elasticsearchService->indexCustomer($customer);
 
         return response()->json([
             'message' => 'Customer created successfully',
@@ -71,11 +92,14 @@ class CustomerController extends Controller
     }
 
     /**
-     * Update the specified customer in storage.
+     * Update the specified customer in MySQL and sync to Elasticsearch.
      */
     public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
         $customer->update($request->validated());
+
+        // Sync updated record to Elasticsearch
+        $this->elasticsearchService->indexCustomer($customer);
 
         return response()->json([
             'message' => 'Customer updated successfully',
@@ -84,11 +108,15 @@ class CustomerController extends Controller
     }
 
     /**
-     * Remove the specified customer from storage.
+     * Remove the specified customer from MySQL and delete from Elasticsearch.
      */
     public function destroy(Customer $customer): JsonResponse
     {
+        $customerId = $customer->id;
         $customer->delete();
+
+        // Delete record from Elasticsearch
+        $this->elasticsearchService->deleteCustomer($customerId);
 
         return response()->json([
             'message' => 'Customer deleted successfully'
